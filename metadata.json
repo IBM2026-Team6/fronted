@@ -1,0 +1,7 @@
+{
+  "name": "IBM_2026_Hackathon",
+  "description": "A professional, aesthetic presentation assistant helping you from preparation flow to live stage performance.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
