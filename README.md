@@ -2,7 +2,7 @@
 
 > **"무대 위, 당신의 언어가 예술이 되다."**
 > 
-> **LiveCoach**는 발표 준비의 시작부터 리허설까지 책임지는 All-in-One AI 프레젠테이션 코칭 솔루션입니다. IBM 2026 Hackathon을 위해 제작되었으며, IBM Watson AI & Upstage API & Google Gemini API의 강력한 추론 능력을 활용하여 논리적 구조 설계와 맞춤형 대본 작성을 돕습니다.
+> **LiveCoach**는 발표 준비의 시작부터 리허설까지 책임지는 All-in-One AI 프레젠테이션 코칭 솔루션입니다.
 
 ---
 
