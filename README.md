@@ -1,34 +1,23 @@
-# 🎤 PitchMate (AI Presentation Assistant)
+# 🎤 PitchMate: AI Presentation Assistant
 
-> **"무대 위, 당신의 언어가 예술이 되다."**
-> 
-> **PitchMate**는 발표 준비의 시작부터 리허설까지 책임지는 All-in-One AI 프레젠테이션 코칭 솔루션입니다.
+> **"무대 위, 당신의 언어가 예술이 되다."** <br/>
+> **PitchMate**는 발표 준비의 시작부터 리허설까지 책임지는 **All-in-One AI 프레젠테이션 코칭 솔루션**입니다.
 
+[![Demo Video](https://github.com/user-attachments/assets/dd6c7229-e03f-44ca-b949-c383469c9825)](https://github.com/IBM2026-Team6/fronted/blob/main/assets/2026%20%EA%B0%95%EB%A6%89%EC%9B%90%EC%A3%BC%EB%8C%80X%EA%B0%95%EC%9B%90%EB%8C%80%20IBM%20HACKATHON.mp4)
 ---
 
-## ✨ Key Features
+## ✨ Key Features Overview
 
-### 1. 🏠 Cinematic Landing & Social Proof
-- **몰입형 디자인**: 스포트라이트 효과와 부드러운 스크롤 애니메이션(`reveal-on-scroll`)으로 사용자의 시선을 사로잡습니다.
-- **사용자 후기 (Testimonials)**: 3D Tilt 효과가 적용된 카드 UI를 통해 솔루션의 효용성을 시각적으로 전달합니다.
-- **동적 반응형**: 마우스 움직임에 따라 반응하는 배경 효과와 애니메이션 요소를 포함합니다.
+> 발표자료 요약 → 대본 생성 → 실전 리허설 → 사전 평가까지  
+> 발표의 전반적인 과정을 하나의 워크플로우로 통합한 **AI 기반 발표 준비 도구**입니다.
 
-### 2. 🧠 Prep Flow (구조 분석)
-- **PDF 자료 분석**: 사용자가 업로드한 발표 자료(PDF)를 `pdf.js`로 텍스트화하여 분석합니다.
-- **논리적 시각화**: 발표 내용을 서론-본론-결론의 논리적 흐름으로 재구성하고, 각 파트별 핵심 요약을 제공합니다.
-- **Glassmorphism UI**: 분석 로딩 중에도 심미적인 만족감을 주는 투명한 오버레이 애니메이션을 제공합니다.
-
-### 3. ✍️ Prep Script (AI 대본 작가)
-- **맞춤형 페르소나 설정**: 청중(전문가/비전문가), 스타일(스토리텔링/전문적), 비언어적 표현 포함 여부를 설정할 수 있습니다.
-- **Gemini 3 Flash 활용**: 최신 AI 모델을 사용하여 자연스러운 한국어 대본을 생성합니다.
-- **인터랙티브 에디터**: 
-  - 섹션별 예상 소요 시간을 AI가 제안하며, 사용자가 직접 수정하여 전체 발표 시간을 조절할 수 있습니다.
-  - **다운로드 기능**: 완성된 대본을 `.txt` 파일로 즉시 다운로드할 수 있습니다.
-
-### 4. 🔴 Live Mode (실전 리허설)
-- **On-Air HUD**: 실제 뉴스룸이나 프롬프터를 연상시키는 어두운 테마의 대시보드입니다.
-- **실시간 타이머 & 체크리스트**: 발표 시간을 체크하고 핵심 포인트 도달 여부를 클릭 한 번으로 관리합니다.
-- **메모/프롬프터**: 발표 중 참고할 메모를 작성하고 띄워놓을 수 있습니다.
+| Feature | Description | Preview |
+|--------|------------|---------|
+| 🏠 **Cinematic Landing** | 시네마틱 다크 UI 기반 랜딩 페이지<br/>서비스 흐름(Prep → Script → Live)을 직관적으로 안내 | <video src="https://github.com/user-attachments/assets/c8b1d73e-d711-46e8-85d2-dc00d849f61a" width="140" controls></video> |
+| 🧠 **Prep Flow** | PDF 발표 자료를 분석하여<br/>서론–본론–결론 구조로 재구성 및 요약 | <video src="https://github.com/user-attachments/assets/dac952b2-8412-465d-8b3a-2e514a32348f" width="140" controls></video> |
+| ✍️ **Prep Script** | 청중·스타일 기반 AI 발표 대본 생성<br/>섹션별 시간·큐·예상 질문 포함 | <video src="https://github.com/user-attachments/assets/8803e1b5-793a-4448-acea-e6046af4d9be" width="140" controls></video> |
+| 🔴 **Live Mode** | 음성 인식 기반 실전 리허설 모드<br/>키워드 트래킹 + 타이머 + 프롬프터 | <video src="https://github.com/user-attachments/assets/6323c604-3972-4ae3-8c7d-9c90ec53e1e1" width="140" controls></video> |
+| 📊 **Prep Eval** | 공고·평가기준 기반 AI 모의 심사<br/>점수·등급·개선 피드백 제공 | <video src="https://github.com/user-attachments/assets/ef498440-da72-418a-8075-42112adaa452" width="140" controls></video> |
 
 ---
 
@@ -53,8 +42,7 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/live-coach.git
-   cd live-coach
+   git clone https://github.com/IBM2026-Team6/fronted.git
    ```
 
 2. **Install dependencies**
@@ -70,7 +58,7 @@
 
 4. **Run the application**
    ```bash
-   npm start
+   npm run dev
    ```
 
 ---
@@ -84,23 +72,24 @@
 │   ├── Navbar.tsx       # Responsive navigation
 │   ├── PrepFlow.tsx     # Logic analysis structure
 │   ├── PrepScript.tsx   # Script generation & download
+│   ├── PrepEval.tsx     # Based AI, Mock Evaluation
 │   └── LiveMode.tsx     # Rehearsal dashboard
 ├── services/
 │   └── geminiService.ts # Google GenAI integration logic
+│   └── backendService.ts # Fast API(Backend) integration logic
 ├── utils/
 │   └── pdfHelper.ts     # PDF parsing utility
 ├── types.ts             # TypeScript interfaces
 ├── App.tsx              # Main router/layout
 └── index.tsx            # Entry point
 ```
-
 ---
 
-## 🎨 UI/UX Highlights
+## 🔗 Links
 
-- **Micro-interactions**: Hover 시 발생하는 3D 회전, 버튼의 빛나는 효과 등 세밀한 인터랙션 구현.
-- **Smooth Transitions**: 페이지 전환 및 모달 등장 시 끊김 없는 애니메이션 적용.
-- **Accessible & Professional**: 가독성 높은 Serif/Sans-serif 폰트 조합과 눈이 편안한 Stone/Green 컬러 팔레트 사용.
+- PPT Link: https://www.canva.com/design/DAG-YFYljqE/kZmxoRisqGe9q0Xl0XRvbA/view?utm_content=DA[…]hare&utm_medium=link2&utm_source=uniquelinks&utlId=h61b4189256
+- Notion Link: https://www.notion.so/2e19761f2ffc8105a46edf86f01d3278?pvs=13
+- Girhub Link: https://github.com/IBM2026-Team6
 
 ---
 
