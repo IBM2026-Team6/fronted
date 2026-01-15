@@ -22,7 +22,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onChangeView }) => 
             🗣️
           </div>
           <span className="font-serif text-2xl font-bold text-brand-dark tracking-tight">
-            LiveCoach
+            PitchMate
           </span>
         </div>
 
@@ -57,6 +57,14 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onChangeView }) => 
                 >
                   <span className="block text-sm font-bold">발표대본 제작</span>
                   <span className="block text-xs text-stone-400 font-normal">Generate polished scripts</span>
+                </button>
+                <div className="h-px bg-stone-100 mx-4"></div>
+                <button 
+                  onClick={() => { onChangeView('prep-eval'); setIsPrepOpen(false); }}
+                  className="w-full text-left px-6 py-3 hover:bg-stone-50 hover:text-brand-green transition-colors"
+                >
+                  <span className="block text-sm font-bold">AI 모의평가</span>
+                  <span className="block text-xs text-stone-400 font-normal">Score against criteria</span>
                 </button>
               </div>
             </div>

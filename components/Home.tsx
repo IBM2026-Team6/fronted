@@ -55,7 +55,7 @@ export const Home: React.FC<HomeProps> = ({ onStart }) => {
           role: "스타트업 CEO",
           image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200&auto=format&fit=crop",
           impact: "시리즈 A 투자 유치 성공",
-          quote: "복잡한 기술 용어들을 투자자들이 이해하기 쉬운 스토리로 바꿔주었습니다. LiveCoach가 없었다면 5분 안에 설득하지 못했을 겁니다.",
+          quote: "복잡한 기술 용어들을 투자자들이 이해하기 쉬운 스토리로 바꿔주었습니다. PitchMate가 없었다면 5분 안에 설득하지 못했을 겁니다.",
           stars: 5
         },
         {
@@ -272,7 +272,7 @@ export const Home: React.FC<HomeProps> = ({ onStart }) => {
                   </h2>
                   <p className="text-stone-400 text-lg font-light leading-relaxed">
                       프레젠테이션은 단순히 슬라이드를 읽는 것이 아닙니다. 리듬, 타이밍, 그리고 관객과의 교감이 핵심입니다. 
-                      LiveCoach는 세계적인 연사들이 사용하는 도구를 누구나 쉽게 사용할 수 있도록 제공합니다.
+                      PitchMate는 세계적인 연사들이 사용하는 도구를 누구나 쉽게 사용할 수 있도록 제공합니다.
                   </p>
                   
                   <div className="grid grid-cols-2 gap-8 pt-8">
@@ -320,7 +320,7 @@ export const Home: React.FC<HomeProps> = ({ onStart }) => {
                 <span className="text-brand-green font-bold tracking-widest uppercase text-sm">Success Stories</span>
                 <h2 className="text-4xl md:text-5xl font-bold text-brand-dark mt-3 mb-6">
                     수많은 발표자들이 <br/>
-                    <span className="font-serif italic text-brand-green">LiveCoach</span>와 함께 증명했습니다.
+                    <span className="font-serif italic text-brand-green">PitchMate</span>와 함께 증명했습니다.
                 </h2>
             </div>
 
@@ -376,7 +376,7 @@ export const Home: React.FC<HomeProps> = ({ onStart }) => {
          </div>
          {/* Decorative big text in background */}
          <div className="absolute -bottom-20 left-0 w-full text-center pointer-events-none select-none">
-             <span className="text-[200px] font-serif font-bold text-stone-100 opacity-50 leading-none">LiveCoach</span>
+             <span className="text-[200px] font-serif font-bold text-stone-100 opacity-50 leading-none">PitchMate</span>
          </div>
       </section>
 
@@ -385,7 +385,7 @@ export const Home: React.FC<HomeProps> = ({ onStart }) => {
           <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
               <div className="flex items-center gap-1 mb-4 md:mb-0">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-serif font-bold text-s">🗣️</div>
-                  <span className="font-serif font-bold text-brand-dark">LiveCoach</span>
+                  <span className="font-serif font-bold text-brand-dark">PitchMate</span>
               </div>
               <div className="flex gap-8 text-xs font-medium text-stone-400 uppercase tracking-wider">
                   <span>(c)IBM</span>

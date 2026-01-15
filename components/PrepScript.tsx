@@ -1,46 +1,70 @@
 import React, { useRef, useState } from 'react';
-// @ts-ignore (html2pdf.js 타입 선언이 없을 때 TS 에러 방지)
 import html2pdf from 'html2pdf.js';
-
+import ReactMarkdown from "react-markdown";
 import { generateScriptViaBackend, downloadScript } from '../services/backendService';
 import { extractTextFromPDF } from '../utils/pdfHelper';
 import { GeneratedScript, PresentationConfig } from '../types';
 
 export const PrepScript: React.FC = () => {
-  const [config, setConfig] = useState<PresentationConfig>({
+  const [config, setConfig] = useState<PresentationConfig & { 
+    slideContent?: string; 
+    reportContent?: string; 
+    docsContent?: string; 
+  }>({
     topic: '',
-    rawContent: '',
-    audience: 'non-expert',
-    style: 'easy',
+    rawContent: '', // 기존 백엔드 호환용 (slideContent와 동기화)
+    slideContent: '',
+    reportContent: '',
+    docsContent: '',
+    audience: 'general',
     useNonVerbal: false,
     aiTool: 'Upstage',
   });
 
-  const [fileName, setFileName] = useState('');
-  const [paperFile, setPaperFile] = useState<File | null>(null);
+  // 파일 상태 관리 (3개로 분리)
+  const [files, setFiles] = useState<{
+    paper: File | null;
+    report: File | null;
+    docs: File | null;
+  }>({ paper: null, report: null, docs: null });
 
+  const [fileName, setFileName] = useState(''); // 기존 다운로드 로직 호환용 (paper 파일명)
+  
   const [result, setResult] = useState<GeneratedScript | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // 다운로드 드롭다운(로컬 방식 유지)
+  // 다운로드 드롭다운
   const [downloadOpen, setDownloadOpen] = useState(false);
 
   // 프론트 디자인 기반 PDF 템플릿 ref
   const pdfRef = useRef<HTMLDivElement | null>(null);
   const isIbmSelected = (config as any).aiTool === 'IBM-Watson';
 
-  /* ---------------- 파일 업로드 (원본 UI 유지) ---------------- */
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  /* ---------------- 파일 핸들링 (신규 구조 적용) ---------------- */
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'paper' | 'report' | 'docs') => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (file.type === 'application/pdf') {
         try {
-          const text = await extractTextFromPDF(file); // UI 유지용
-          setConfig(prev => ({ ...prev, rawContent: text }));
-          setFileName(file.name);
-          setPaperFile(file);
+          const text = await extractTextFromPDF(file);
+          
+          setFiles(prev => ({ ...prev, [type]: file }));
+
+          if (type === 'paper') {
+            setFileName(file.name);
+            setConfig(prev => ({ 
+              ...prev, 
+              slideContent: text, 
+              rawContent: text // 기존 백엔드 호환성 유지
+            }));
+          } else if (type === 'report') {
+            setConfig(prev => ({ ...prev, reportContent: text }));
+          } else if (type === 'docs') {
+            setConfig(prev => ({ ...prev, docsContent: text }));
+          }
+
         } catch (err) {
-          alert('PDF 읽기 실패: ' + err);
+          alert(`${type} 파일 읽기 실패: ` + err);
         }
       } else {
         alert('PDF 파일만 업로드 가능합니다.');
@@ -48,19 +72,40 @@ export const PrepScript: React.FC = () => {
     }
   };
 
-  /* ---------------- 대본 생성 (백엔드) ---------------- */
+  const removeFile = (type: 'paper' | 'report' | 'docs') => {
+    setFiles(prev => ({ ...prev, [type]: null }));
+    
+    if (type === 'paper') {
+      setFileName('');
+      setConfig(prev => ({ ...prev, slideContent: '', rawContent: '' }));
+    } else if (type === 'report') {
+      setConfig(prev => ({ ...prev, reportContent: '' }));
+    } else if (type === 'docs') {
+      setConfig(prev => ({ ...prev, docsContent: '' }));
+    }
+  };
+
+  /* ---------------- 대본 생성 (백엔드 기존 로직 유지) ---------------- */
   const handleGenerate = async () => {
-    if (!config.rawContent) return;
+    // slideContent(rawContent)는 필수
+    if (!config.rawContent) {
+      alert("발표 자료(Paper) 업로드 또는 내용 입력은 필수입니다.");
+      return;
+    }
 
     setLoading(true);
     try {
       const fileToSend =
-        paperFile ??
+        files.paper ??
         new File([config.rawContent], 'direct_input.txt', {
           type: 'text/plain',
         });
 
-      const script = await generateScriptViaBackend(config, fileToSend);
+      const script = await generateScriptViaBackend(config, {
+        paper: fileToSend,
+        report: files.report,
+        docs: files.docs,
+      });      
       setResult(script);
     } catch (e: any) {
       alert(e?.message || '대본 생성 중 오류가 발생했습니다. 다시 시도해주세요.');
@@ -86,7 +131,7 @@ export const PrepScript: React.FC = () => {
     });
   };
 
-  /* ---------------- 프론트 디자인 기반 PDF 생성(전문적인 레이아웃) ---------------- */
+  /* ---------------- 프론트 디자인 기반 PDF 생성(원본 유지) ---------------- */
   const downloadStyledPdf = async () => {
     if (!result || !pdfRef.current) return;
 
@@ -94,7 +139,6 @@ export const PrepScript: React.FC = () => {
       (result as any).fileStem ||
       (fileName ? fileName.split('.').slice(0, -1).join('.') : 'presentation');
 
-    // A4를 "정확한 폭"으로 맞추기 위해 margin 0 + 내부 padding으로 여백 설계
     const opt = {
       margin: 0,
       filename: `script_${stem}.pdf`,
@@ -103,7 +147,6 @@ export const PrepScript: React.FC = () => {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
-        // 가끔 폭이 줄어드는 문제 방지
         windowWidth: pdfRef.current.scrollWidth,
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -113,7 +156,7 @@ export const PrepScript: React.FC = () => {
     await html2pdf().set(opt).from(pdfRef.current).save();
   };
 
-  /* ---------------- 다운로드 (TXT=백엔드, PDF=프론트 스타일) ---------------- */
+  /* ---------------- 다운로드 핸들러 (원본 유지) ---------------- */
   const triggerDownload = async (format: 'txt' | 'pdf') => {
     if (!result) return;
 
@@ -149,7 +192,7 @@ export const PrepScript: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-stone-50 py-12 px-4 sm:px-6 lg:px-8 relative">
-      {/* Cinematic Loading Overlay - Glassmorphism (원본 유지) */}
+      {/* Cinematic Loading Overlay - Glassmorphism (원본 디자인 유지) */}
       {loading && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/60 backdrop-blur-md transition-all duration-500">
           <div className="relative mb-10">
@@ -172,118 +215,110 @@ export const PrepScript: React.FC = () => {
           >
             청중의 관점에서 단어를 선택하고 리듬을 조율하고 있습니다.
           </p>
-
           <div className="mt-8 flex gap-3">
-            <div
-              className="w-3 h-3 bg-brand-gold rounded-full animate-bounce"
-              style={{ animationDelay: '0.0s' }}
-            ></div>
-            <div
-              className="w-3 h-3 bg-brand-gold rounded-full animate-bounce"
-              style={{ animationDelay: '0.2s' }}
-            ></div>
-            <div
-              className="w-3 h-3 bg-brand-gold rounded-full animate-bounce"
-              style={{ animationDelay: '0.4s' }}
-            ></div>
+            <div className="w-3 h-3 bg-brand-gold rounded-full animate-bounce" style={{ animationDelay: '0.0s' }}></div>
+            <div className="w-3 h-3 bg-brand-gold rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-3 h-3 bg-brand-gold rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
           </div>
         </div>
       )}
 
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Panel: Configuration (원본 UI 유지) */}
+        {/* Left Panel: Configuration */}
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-stone-100 sticky top-24">
             <h2 className="text-xl font-serif font-bold text-brand-dark mb-6">대본 설정</h2>
 
             <div className="space-y-4">
+              
+              {/* === 1. 발표 자료 업로드 (Paper) - 필수 === */}
               <div>
-                <label className="block text-xs font-bold text-stone-500 uppercase mb-2">
-                  주제 / 내용 업로드 (PDF)
-                </label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-xs font-bold text-stone-500 uppercase">
+                    발표 자료 (Papers) <span className="text-red-500">*</span>
+                  </label>
+                  {files.paper && (
+                    <button onClick={() => removeFile('paper')} className="text-xs text-red-400 hover:text-red-600">삭제</button>
+                  )}
+                </div>
 
-                {!fileName ? (
-                  <div className="flex items-center justify-center w-full mb-2">
-                    <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-stone-200 border-dashed rounded-lg cursor-pointer bg-stone-50 hover:bg-stone-100 transition-colors group">
-                      <div className="flex flex-col items-center justify-center pt-2 pb-2">
-                        <svg
-                          className="w-6 h-6 mb-1 text-stone-400 group-hover:text-brand-green"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                          />
-                        </svg>
-                        <p className="text-xs text-stone-500">PDF 파일 업로드</p>
-                      </div>
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept=".pdf"
-                        onChange={handleFileChange}
-                      />
-                    </label>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between p-3 bg-brand-cream border border-brand-lightGreen rounded mb-2">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      <svg
-                        className="w-4 h-4 text-brand-green flex-shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                      <span className="text-xs font-bold text-brand-dark truncate">{fileName}</span>
+                {!files.paper ? (
+                  <>
+                    <div className="flex items-center justify-center w-full mb-2">
+                      <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-stone-200 border-dashed rounded-lg cursor-pointer bg-stone-50 hover:bg-stone-100 transition-colors group">
+                        <div className="flex flex-col items-center justify-center pt-2 pb-2">
+                          <svg className="w-5 h-5 mb-1 text-stone-400 group-hover:text-brand-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <p className="text-[10px] text-stone-500">PDF 업로드 (Paper)</p>
+                        </div>
+                        <input type="file" className="hidden" accept=".pdf" onChange={(e) => handleFileChange(e, 'paper')} />
+                      </label>
                     </div>
-                    <button
-                      onClick={() => {
-                        setFileName('');
-                        setPaperFile(null);
-                        setConfig(p => ({ ...p, rawContent: '' }));
-                      }}
-                      className="text-stone-400 hover:text-red-500"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
+                    {/* 직접 입력 텍스트 영역 */}
+                    <textarea
+                      className="w-full h-24 p-3 border border-stone-200 rounded text-sm focus:ring-1 focus:ring-brand-green outline-none"
+                      placeholder="또는 발표 내용을 직접 입력하세요..."
+                      value={config.rawContent}
+                      onChange={e => setConfig({ ...config, rawContent: e.target.value, slideContent: e.target.value })}
+                    />
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between p-3 bg-brand-cream border border-brand-lightGreen rounded">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                       <svg className="w-4 h-4 text-brand-green flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                    </button>
+                      <span className="text-xs font-bold text-brand-dark truncate">{files.paper.name}</span>
+                    </div>
                   </div>
-                )}
-
-                {!fileName && (
-                  <textarea
-                    className="w-full h-24 p-3 border border-stone-200 rounded text-sm focus:ring-1 focus:ring-brand-green outline-none"
-                    placeholder="또는 내용을 직접 입력하세요..."
-                    value={config.rawContent}
-                    onChange={e => setConfig({ ...config, rawContent: e.target.value })}
-                  />
                 )}
               </div>
 
+              {/* === 2. 상세 보고서 (Report) - 선택 === */}
+              <div className={`border rounded-lg p-3 transition-colors ${files.report ? 'bg-brand-cream border-brand-green' : 'bg-white border-stone-200'}`}>
+                <div className="flex justify-between items-center mb-2">
+                   <span className="text-xs font-bold text-stone-500 uppercase">상세 보고서 (Report)</span>
+                   {files.report && <button onClick={() => removeFile('report')} className="text-xs text-red-400 hover:text-red-600">삭제</button>}
+                </div>
+                {!files.report ? (
+                   <label className="flex items-center justify-center w-full h-10 border border-dashed border-stone-300 rounded cursor-pointer hover:bg-stone-50 transition-colors">
+                      <span className="text-xs text-stone-500">+ 보고서 PDF 추가</span>
+                      <input type="file" className="hidden" accept=".pdf" onChange={(e) => handleFileChange(e, 'report')} />
+                  </label>
+                ) : (
+                  <div className="text-xs text-brand-green font-medium flex items-center gap-1">
+                      <span className="truncate">{files.report.name}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* === 3. 평가 기준 (Docs) - 선택 === */}
+              <div className={`border rounded-lg p-3 transition-colors ${files.docs ? 'bg-brand-cream border-brand-green' : 'bg-white border-stone-200'}`}>
+                <div className="flex justify-between items-center mb-2">
+                   <span className="text-xs font-bold text-stone-500 uppercase">평가 기준 (Docs)</span>
+                   {files.docs && <button onClick={() => removeFile('docs')} className="text-xs text-red-400 hover:text-red-600">삭제</button>}
+                </div>
+                {!files.docs ? (
+                   <label className="flex items-center justify-center w-full h-10 border border-dashed border-stone-300 rounded cursor-pointer hover:bg-stone-50 transition-colors">
+                      <span className="text-xs text-stone-500">+ 평가 기준 PDF 추가</span>
+                      <input type="file" className="hidden" accept=".pdf" onChange={(e) => handleFileChange(e, 'docs')} />
+                  </label>
+                ) : (
+                  <div className="text-xs text-brand-green font-medium flex items-center gap-1">
+                      <span className="truncate">{files.docs.name}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* === 청중 타겟 === */}
               <div>
                 <label className="block text-xs font-bold text-stone-500 uppercase mb-2">
                   청중 타겟
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { val: 'non-expert', label: '비전문가 (일반인)' },
+                    { val: 'general', label: '비전문가 (일반인)' },
                     { val: 'expert', label: '전문가 (관계자)' },
                   ].map(opt => (
                     <button
@@ -301,30 +336,7 @@ export const PrepScript: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-stone-500 uppercase mb-2">
-                  발표 스타일
-                </label>
-                <div className="flex gap-2">
-                  {[
-                    { val: 'easy', label: '편안함 / 스토리텔링' },
-                    { val: 'professional', label: '전문적 / 기술적' },
-                  ].map(opt => (
-                    <button
-                      key={opt.val}
-                      onClick={() => setConfig({ ...config, style: opt.val as any })}
-                      className={`flex-1 py-3 text-xs rounded border transition-all duration-200 ${
-                        config.style === opt.val
-                          ? 'bg-brand-dark text-white border-brand-dark shadow-md transform scale-[1.02]'
-                          : 'bg-white text-stone-500 border-stone-200 hover:border-brand-dark hover:text-brand-dark'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
+              {/* === AI Tool === */}
               <div>
                 <label className="block text-xs font-bold text-stone-500 uppercase mb-2">
                   AI Tool
@@ -357,19 +369,13 @@ export const PrepScript: React.FC = () => {
                         <div className="text-amber-800 mt-1">
                           안정성을 위해 <span className="font-bold">Upstage</span> 사용을 권장합니다.
                         </div>
-                        {/* <button
-                          type="button"
-                          onClick={() => setConfig({ ...config, aiTool: 'Upstage' as any })}
-                          className="mt-3 inline-flex items-center justify-center rounded-md bg-brand-dark text-white px-3 py-2 font-bold tracking-wide hover:opacity-95 transition-opacity"
-                        >
-                          Upstage로 변경
-                        </button> */}
                       </div>
                     </div>
                   </div>
                 )}
               </div>
 
+              {/* === 비언어적 지시문 === */}
               <div className="flex items-center justify-between py-2">
                 <label className="text-xs font-bold text-stone-500 uppercase">
                   비언어적 지시문(제스처 등) 포함
@@ -399,7 +405,7 @@ export const PrepScript: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Panel: Output (원본 UI + 다운로드 드롭다운만 로컬 방식) */}
+        {/* Right Panel: Output (원본 로직 유지) */}
         <div className="lg:col-span-8">
           {result ? (
             <div className="bg-white rounded-xl shadow-lg border border-stone-100 overflow-hidden animate-fade-in">
@@ -417,12 +423,7 @@ export const PrepScript: React.FC = () => {
                     className="flex items-center gap-2 px-4 py-2 bg-brand-green hover:bg-green-600 text-white rounded text-sm font-bold transition-colors shadow-lg"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                      />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                     대본 다운로드
                   </button>
@@ -456,17 +457,6 @@ export const PrepScript: React.FC = () => {
               </div>
 
               <div className="p-8 space-y-8">
-                {/* <div className="flex flex-wrap gap-2 mb-8">
-                  {(result.keywords || []).map((kw: any, i: number) => (
-                    <span
-                      key={i}
-                      className="px-3 py-1 bg-brand-cream border border-brand-gold/30 text-brand-dark text-sm rounded-full"
-                    >
-                      #{kw}
-                    </span>
-                  ))}
-                </div> */}
-
                 <div className="space-y-6">
                   {result.sections.map((section: any, idx: number) => (
                     <div
@@ -496,9 +486,11 @@ export const PrepScript: React.FC = () => {
                         </div>
                       )}
 
-                      <p className="text-lg text-stone-800 leading-relaxed font-serif">
-                        {section.content}
-                      </p>
+                      <div className="prose prose-stone max-w-none text-lg leading-relaxed font-serif">
+                        <ReactMarkdown>
+                          {section.content}
+                        </ReactMarkdown>
+                      </div>
 
                       {Array.isArray(section.qa) && section.qa.length > 0 && (
                         <div className="mt-6 border-t border-stone-200 pt-4">
@@ -538,26 +530,21 @@ export const PrepScript: React.FC = () => {
         </div>
       </div>
 
-      {/* ===================== PDF 전용 템플릿 ===================== */}
+      {/* ===================== PDF 전용 템플릿 (원본 유지) ===================== */}
       <div className="fixed left-[-99999px] top-0">
-        {/* A4 정확 폭/높이(mm) + 내부 여백으로 “틀” 안정화 */}
         <div
           ref={pdfRef}
           className="w-[210mm] min-h-[297mm] bg-white text-stone-800 box-border"
         >
-          {/* 페이지 패딩 영역(실제 인쇄 여백 역할) */}
           <div className="p-[14mm]">
-            {/* 헤더: 폭/정렬/클리핑 안정화 */}
             <div className="bg-brand-dark text-white rounded-2xl px-8 py-7 border border-stone-700">
               <div className="flex items-start justify-between gap-6">
                 <div className="min-w-0">
-                  <div className="font-serif text-3xl leading-tight">LiveCoach AI Script</div>
+                  <div className="font-serif text-3xl leading-tight">PitchMate AI Script</div>
                   <div className="text-sm text-stone-200 mt-2">
                     {fileName ? `File: ${fileName}` : 'File: Direct Input'}
                   </div>
                 </div>
-
-                {/* Total 뱃지: 오른쪽 잘림 방지 */}
                 <div className="shrink-0">
                   <div className="text-sm bg-white/10 border border-white/20 px-4 py-2 rounded-xl">
                     <span className="text-stone-200 mr-2">Total</span>
@@ -570,11 +557,9 @@ export const PrepScript: React.FC = () => {
 
               <div className="h-px bg-white/10 my-5"></div>
 
-              {/* 설정 요약 */}
               <div className="flex flex-wrap gap-2">
                 {[
                   { k: 'Audience', v: config.audience },
-                  { k: 'Style', v: config.style },
                   { k: 'Non-verbal', v: config.useNonVerbal ? 'ON' : 'OFF' },
                   { k: 'AI Tool', v: (config as any).aiTool },
                 ].map((x, i) => (
@@ -589,12 +574,10 @@ export const PrepScript: React.FC = () => {
               </div>
             </div>
 
-            {/* 섹션: 각 Slide는 안정적으로 새 페이지 시작(틀/정렬 완성도) */}
             <div className="mt-8 space-y-8">
               {(result?.sections || []).map((section: any, idx: number) => (
                 <div key={idx} className={idx > 0 ? 'pdf-page-break' : ''}>
                   <div className="pdf-avoid-break border border-stone-200 rounded-2xl overflow-hidden">
-                    {/* 섹션 헤더 */}
                     <div className="bg-stone-50 px-7 py-5 flex items-center justify-between border-b border-stone-200">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-2.5 h-2.5 rounded-full bg-brand-green"></div>
@@ -608,7 +591,6 @@ export const PrepScript: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* 섹션 본문 */}
                     <div className="px-7 py-7">
                       {section.cue && (
                         <div className="mb-4 inline-flex items-center gap-2 text-xs text-stone-600 italic bg-stone-100 px-3 py-2 rounded-lg border border-stone-200">
@@ -621,7 +603,6 @@ export const PrepScript: React.FC = () => {
                         {section.content}
                       </div>
 
-                      {/* Q&A */}
                       {Array.isArray(section.qa) && section.qa.length > 0 && (
                         <div className="mt-7 pt-6 border-t border-stone-200">
                           <div className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-4">
@@ -652,9 +633,8 @@ export const PrepScript: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* 페이지 푸터(전문성/문서 완성도) */}
                   <div className="mt-6 text-xs text-stone-400 flex items-center justify-between">
-                    <span>Generated by LiveCoach</span>
+                    <span>Generated by PitchMate</span>
                     <span>{new Date().toLocaleString()}</span>
                   </div>
                 </div>
@@ -664,12 +644,10 @@ export const PrepScript: React.FC = () => {
         </div>
       </div>
 
-      {/* PDF 페이지 제어 CSS */}
       <style>{`
         .pdf-page-break { page-break-before: always; }
         .pdf-avoid-break { break-inside: avoid; page-break-inside: avoid; }
       `}</style>
-      {/* =============================================================== */}
     </div>
   );
 };

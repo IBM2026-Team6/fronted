@@ -2,10 +2,32 @@ import { GeneratedScript, PresentationConfig } from "../types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
-export async function generateScriptViaBackend(config: PresentationConfig, paperFile: File): Promise<GeneratedScript> {
+export async function generateScriptViaBackend(
+  config: PresentationConfig & {
+    reportContent?: string;
+    docsContent?: string;
+  },
+  files: {
+    paper: File;
+    report?: File | null;
+    docs?: File | null;
+  }
+): Promise<GeneratedScript> {
   const fd = new FormData();
+
+  // inquired
   fd.append("apiProvider", config.aiTool === "Upstage" ? "upstage" : "ibm");
-  fd.append("paper", paperFile);
+  fd.append("audience", config.audience === "expert" ? "expert" : "general");
+  fd.append("nonverbal", config.useNonVerbal ? "y" : "n");
+  fd.append("paper", files.paper);
+
+  // optional
+  if (files.report) {
+    fd.append("report", files.report);
+  }
+  if (files.docs) {
+    fd.append("docs", files.docs);
+  }
 
   const res = await fetch(`${BASE_URL}/v1/scripts/generate`, {
     method: "POST",

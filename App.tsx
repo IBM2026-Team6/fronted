@@ -3,6 +3,7 @@ import { Navbar } from './components/Navbar';
 import { Home } from './components/Home';
 import { PrepFlow } from './components/PrepFlow';
 import { PrepScript } from './components/PrepScript';
+import { PrepEval } from './components/PrepEval';
 import { LiveMode } from './components/LiveMode';
 import { AppView } from './types';
 
@@ -17,6 +18,8 @@ function App() {
         return <PrepFlow />;
       case 'prep-script':
         return <PrepScript />;
+      case 'prep-eval':
+        return <PrepEval />;
       case 'live':
         return <LiveMode />;
       default:

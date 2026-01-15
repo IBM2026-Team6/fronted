@@ -1,8 +1,8 @@
-# 🎤 LiveCoach (AI Presentation Assistant)
+# 🎤 PitchMate (AI Presentation Assistant)
 
 > **"무대 위, 당신의 언어가 예술이 되다."**
 > 
-> **LiveCoach**는 발표 준비의 시작부터 리허설까지 책임지는 All-in-One AI 프레젠테이션 코칭 솔루션입니다.
+> **PitchMate**는 발표 준비의 시작부터 리허설까지 책임지는 All-in-One AI 프레젠테이션 코칭 솔루션입니다.
 
 ---
 
@@ -107,4 +107,4 @@
 ## 📜 License
 
 This project is created for the IBM 2026 Hackathon.
-Copyright © 2026 LiveCoach Team.
+Copyright © 2026 PitchMate Team.
